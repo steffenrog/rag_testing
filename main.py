@@ -61,6 +61,3 @@ if __name__ == "__main__":
 
 
 
-## TODO: 
-# 1. Handle multiple files in a better way - it works but it's not very user-friendly.
-# 2. User more "menu-like" interface for the CLI tool. In addition to the parse way.

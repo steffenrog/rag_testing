@@ -1,8 +1,8 @@
 embedding_model: "mxbai-embed-large"
 qa_model: "llama3-chatqa:8b"
-top_k: 7
+top_k: 3
 max_context_length: 1024
-system_message: "You are a helpful assistant that is an expert at extracting the most useful information from a given text"
+system_message: "You are a helpful assistant that is an expert at extracting the most useful information from a given text, answer the User Question with the most relevant information you can find."
 
 ollama_api:
   base_url: "http://localhost:11434/v1"

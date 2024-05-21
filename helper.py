@@ -79,7 +79,7 @@ def load_or_generate_embeddings(index, documents, metadata, file_name, vault_con
         try:
             response = ollama.embeddings(model=embedding_model, prompt=content)
             embedding = np.array(response["embedding"]).astype('float32')
-            print(f"Generated embedding with shape: {embedding.shape}")  # Print the shape of the embedding
+            print(PINK + f"Generated embedding with shape: {embedding.shape}" + RESET_COLOR)  # Print the shape of the embedding
         except Exception as e:
             print(f"Error generating embeddings: {str(e)}")
             continue
@@ -113,7 +113,7 @@ def segment_text(text, max_length=512):
         segments.append('. '.join(current_segment) + '.')
     return segments
 
-def get_relevant_context(query, index, documents, top_k, embedding_model, max_context_length=2048):
+def get_relevant_context(query, index, documents, top_k, embedding_model, max_context_length=1024):
     print(PINK + "Retrieving relevant context..." + RESET_COLOR)
     try:
         response = ollama.embeddings(model=embedding_model, prompt=query)
@@ -142,11 +142,12 @@ def get_relevant_context(query, index, documents, top_k, embedding_model, max_co
         return ""
 
 
-def ollama_chat(user_input, system_message, index, documents, qa_model, embedding_model, conversation_history, top_k, client, document_content=None, index_file=None, documents_file=None, max_context_length=2048):
+def ollama_chat(user_input, system_message, index, documents, metadata, qa_model, embedding_model, conversation_history, top_k, client, document_content=None, index_file=None, documents_file=None, metadata_file=None, max_context_length=1024):
     if document_content:
         segments = segment_text(document_content)
         segment_embeddings = []
         segment_ids = []
+        file_name = 'document_content'  
         for segment in segments:
             try:
                 response = ollama.embeddings(model=embedding_model, prompt=segment)
@@ -159,7 +160,8 @@ def ollama_chat(user_input, system_message, index, documents, qa_model, embeddin
         for seg_id, embedding in zip(segment_ids, segment_embeddings):
             index.add(np.expand_dims(embedding, axis=0))
             documents[seg_id] = segment
-        save_faiss_index(index_file, documents_file, index, documents)
+        metadata[file_name] = segment_ids
+        save_faiss_index(index_file, documents_file, metadata_file, index, documents, metadata)
         relevant_context = get_relevant_context(user_input, index, documents, top_k, embedding_model, max_context_length)
         context_str = relevant_context
         #print("Context Pulled from Document: \n\n" + CYAN + context_str + RESET_COLOR)
@@ -174,12 +176,12 @@ def ollama_chat(user_input, system_message, index, documents, qa_model, embeddin
 
     user_input_with_context = user_input
     if context_str:
-        user_input_with_context = context_str + "\n\n" + " Question: "  + user_input
+        user_input_with_context = context_str + "\n\n" + " User Question: " + user_input
 
     conversation_history.append({"role": "user", "content": user_input_with_context})
     messages = [{"role": "system", "content": system_message}, *conversation_history]
 
-    #print(f"Messages being sent to QA model: {messages}") 
+    #print(f"Messages being sent to QA model: {messages}")  
 
     try:
         response = client.chat.completions.create(
@@ -196,7 +198,8 @@ def ollama_chat(user_input, system_message, index, documents, qa_model, embeddin
 
 def list_documents(metadata):
     print(PINK + "Listing documents..." + RESET_COLOR)
-    return list(metadata.keys())
+    pdf_files = [file for file in metadata.keys() if file.endswith('.pdf')]
+    return pdf_files
 
 
 
