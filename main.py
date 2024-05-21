@@ -24,10 +24,10 @@ def main():
 
     config = load_config(args.config)
     embedding_dim = 1024  
-    index, documents = initialize_faiss(config['faiss']['index_file'], config['faiss']['documents_file'], embedding_dim)
-
+    index, documents, metadata = initialize_faiss(config['faiss']['index_file'], config['faiss']['documents_file'], config['faiss']['metadata_file'], embedding_dim)
+    
     if args.list:
-        docs = list_documents(documents)
+        docs = list_documents(metadata)
         print(CYAN + "Available documents:" + RESET_COLOR)
         for doc in docs:
             print(f"- {doc}")
@@ -36,11 +36,11 @@ def main():
     if args.upload:
         vault_content = open_file(args.upload)
         if vault_content:
-            load_or_generate_embeddings(index, documents, [vault_content], config['embedding_model'], config['faiss']['index_file'], config['faiss']['documents_file'])
-
+            load_or_generate_embeddings(index, documents, metadata, args.upload, [vault_content], config['embedding_model'], config['faiss']['index_file'], config['faiss']['documents_file'], config['faiss']['metadata_file'])
+            
     if args.query:
         if args.doc:
-            document_content = get_document_by_id(documents, args.doc)
+            document_content = get_document_by_id(documents, metadata, args.doc)
             if not document_content:
                 print(f"Document with ID '{args.doc}' not found.")
                 return
@@ -53,7 +53,7 @@ def main():
         conversation_history = []
         client = OpenAI(base_url=config['ollama_api']['base_url'], api_key=config['ollama_api']['api_key'])
 
-        answer = ollama_chat(args.query, system_message, index, documents, qa_model, embedding_model, conversation_history, config['top_k'], client, document_content, config['faiss']['index_file'], config['faiss']['documents_file'], config['max_context_length'])
+        answer = ollama_chat(args.query, system_message, index, documents, metadata, qa_model, embedding_model, conversation_history, config['top_k'], client, document_content, config['faiss']['index_file'], config['faiss']['documents_file'], config['faiss']['metadata_file'], config['max_context_length'])
         print(NEON_GREEN + "Answer: \n" + answer + RESET_COLOR)
 
 if __name__ == "__main__":

@@ -47,27 +47,34 @@ def open_file(filepath):
         print(f"Error opening file '{filepath}': {str(e)}")
         return None
 
-def initialize_faiss(index_file, documents_file, embedding_dim=1024):
+def initialize_faiss(index_file, documents_file, metadata_file, embedding_dim=1024):
     print(PINK + "Initializing Faiss..." + RESET_COLOR)
-    if os.path.exists(index_file):
+    if os.path.exists(index_file) and os.path.exists(metadata_file):
         with open(index_file, 'rb') as f:
             index, documents = pickle.load(f)
+        with open(metadata_file, 'rb') as f:
+            metadata = pickle.load(f)
         if index.d != embedding_dim:
             print(f"Embedding dimension mismatch: index dimension is {index.d}, expected {embedding_dim}")
             exit(1)
     else:
         index = faiss.IndexFlatL2(embedding_dim)
         documents = {}
-    return index, documents
+        metadata = {}
+    return index, documents, metadata
 
-def save_faiss_index(index_file, documents_file, index, documents):
+
+def save_faiss_index(index_file, documents_file, metadata_file, index, documents, metadata):
     with open(index_file, 'wb') as f:
         pickle.dump((index, documents), f)
     with open(documents_file, 'wb') as f:
         pickle.dump(documents, f)
+    with open(metadata_file, 'wb') as f:
+        pickle.dump(metadata, f)
 
-def load_or_generate_embeddings(index, documents, vault_content, embedding_model, index_file, documents_file):
+def load_or_generate_embeddings(index, documents, metadata, file_name, vault_content, embedding_model, index_file, documents_file, metadata_file):
     print(PINK + "Loading or generating embeddings..." + RESET_COLOR)
+    doc_ids = []
     for content in vault_content:
         try:
             response = ollama.embeddings(model=embedding_model, prompt=content)
@@ -80,9 +87,12 @@ def load_or_generate_embeddings(index, documents, vault_content, embedding_model
         doc_id = str(uuid.uuid4())
         index.add(np.expand_dims(embedding, axis=0))
         documents[doc_id] = content
+        doc_ids.append(doc_id)
 
-    save_faiss_index(index_file, documents_file, index, documents)
-    return index, documents
+    metadata[file_name] = doc_ids
+    save_faiss_index(index_file, documents_file, metadata_file, index, documents, metadata)
+    return index, documents, metadata
+
 
 def segment_text(text, max_length=512):
     sentences = text.split('. ')
@@ -184,13 +194,20 @@ def ollama_chat(user_input, system_message, index, documents, qa_model, embeddin
 
 
 
-def list_documents(documents):
+def list_documents(metadata):
     print(PINK + "Listing documents..." + RESET_COLOR)
-    return list(documents.keys())
+    return list(metadata.keys())
 
-def get_document_by_id(documents, doc_id):
-    print(PINK + f"Retrieving document with ID {doc_id}..." + RESET_COLOR)
-    return documents.get(doc_id, None)
+
+
+def get_document_by_id(documents, metadata, file_name):
+    print(PINK + f"Retrieving document with name {file_name}..." + RESET_COLOR)
+    if file_name in metadata:
+        doc_ids = metadata[file_name]
+        return "\n".join([documents[doc_id] for doc_id in doc_ids])
+    else:
+        return None
+
 
 def clean_text_for_embedding(text):
     text = text.lower()

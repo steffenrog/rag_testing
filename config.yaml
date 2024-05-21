@@ -11,3 +11,4 @@ ollama_api:
 faiss:
   index_file: "faiss_index.pkl"
   documents_file: "documents.pkl"
+  metadata_file: "metadata.pkl"
