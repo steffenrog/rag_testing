@@ -1,3 +1,8 @@
+## Author: Steffen Rogne
+## Date: 19-05-2024
+## Project: Own version of RAG with OLLAMA
+
+
 import argparse
 from helper import load_config, initialize_faiss, open_file, load_or_generate_embeddings, ollama_chat, list_documents, get_document_by_id
 from openai import OpenAI
@@ -48,8 +53,14 @@ def main():
         conversation_history = []
         client = OpenAI(base_url=config['ollama_api']['base_url'], api_key=config['ollama_api']['api_key'])
 
-        answer = ollama_chat(args.query, system_message, index, documents, qa_model, embedding_model, conversation_history, config['top_k'], client, document_content)
+        answer = ollama_chat(args.query, system_message, index, documents, qa_model, embedding_model, conversation_history, config['top_k'], client, document_content, config['faiss']['index_file'], config['faiss']['documents_file'], config['max_context_length'])
         print(NEON_GREEN + "Answer: \n" + answer + RESET_COLOR)
 
 if __name__ == "__main__":
     main()
+
+
+
+## TODO: 
+# 1. Handle multiple files in a better way - it works but it's not very user-friendly.
+# 2. User more "menu-like" interface for the CLI tool. In addition to the parse way.

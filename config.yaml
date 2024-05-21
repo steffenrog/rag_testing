@@ -1,6 +1,7 @@
 embedding_model: "mxbai-embed-large"
 qa_model: "llama3-chatqa:8b"
 top_k: 7
+max_context_length: 1024
 system_message: "You are a helpful assistant that is an expert at extracting the most useful information from a given text"
 
 ollama_api:
