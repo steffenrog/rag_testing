@@ -49,7 +49,7 @@ def main():
         client = OpenAI(base_url=config['ollama_api']['base_url'], api_key=config['ollama_api']['api_key'])
 
         answer = ollama_chat(args.query, system_message, index, documents, qa_model, embedding_model, conversation_history, config['top_k'], client, document_content)
-        print(NEON_GREEN + "Answer: " + answer + RESET_COLOR)
+        print(NEON_GREEN + "Answer: \n" + answer + RESET_COLOR)
 
 if __name__ == "__main__":
     main()
