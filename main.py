@@ -4,7 +4,7 @@
 
 
 import argparse
-from helper import load_config, initialize_faiss, open_file, load_or_generate_embeddings, ollama_chat, list_documents, get_document_by_id
+from helper import load_config, initialize_faiss, open_file, load_or_generate_embeddings, ollama_chat, list_documents, get_document_by_id, set_debug
 from openai import OpenAI
 
 PINK = '\033[95m'
@@ -20,8 +20,10 @@ def main():
     parser.add_argument("--query", type=str, help="Query string to ask the model.")
     parser.add_argument("--list", action='store_true', help="List available documents in the database.")
     parser.add_argument("--doc", type=str, help="Document ID to use for the query.")
+    parser.add_argument("--debug", action='store_true', help="Enable debug mode.")
     args = parser.parse_args()
 
+    set_debug(args.debug)
     config = load_config(args.config)
     embedding_dim = 1024  
     index, documents, metadata = initialize_faiss(config['faiss']['index_file'], config['faiss']['documents_file'], config['faiss']['metadata_file'], embedding_dim)
@@ -46,6 +48,8 @@ def main():
                 return
         else:
             document_content = None
+            
+
 
         system_message = config['system_message']
         qa_model = config['qa_model']

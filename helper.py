@@ -16,6 +16,13 @@ YELLOW = '\033[93m'
 NEON_GREEN = '\033[92m'
 RESET_COLOR = '\033[0m'
 
+DEBUG = False
+
+def set_debug(debug):
+    global DEBUG
+    DEBUG = debug
+
+
 def load_config(config_file):
     print(PINK + "Loading configuration..." + RESET_COLOR)
     try:
@@ -73,13 +80,14 @@ def save_faiss_index(index_file, documents_file, metadata_file, index, documents
         pickle.dump(metadata, f)
 
 def load_or_generate_embeddings(index, documents, metadata, file_name, vault_content, embedding_model, index_file, documents_file, metadata_file):
-    print(PINK + "Loading or generating embeddings..." + RESET_COLOR)
+    print(PINK + "Loading and generating embeddings..." + RESET_COLOR)
     doc_ids = []
     for content in vault_content:
         try:
             response = ollama.embeddings(model=embedding_model, prompt=content)
             embedding = np.array(response["embedding"]).astype('float32')
-            print(PINK + f"Generated embedding with shape: {embedding.shape}" + RESET_COLOR)  # Print the shape of the embedding
+            if DEBUG:
+                print(f"Generated embedding with shape: {embedding.shape}")
         except Exception as e:
             print(f"Error generating embeddings: {str(e)}")
             continue
@@ -118,7 +126,8 @@ def get_relevant_context(query, index, documents, top_k, embedding_model, max_co
     try:
         response = ollama.embeddings(model=embedding_model, prompt=query)
         query_embedding = np.array(response["embedding"]).astype('float32')
-        print(PINK + f"Query embedding with shape: {query_embedding.shape}" + RESET_COLOR)   # Print the shape of the query embedding
+        if DEBUG:
+            print(f"Query embedding with shape: {query_embedding.shape}")
         D, I = index.search(np.expand_dims(query_embedding, axis=0), top_k)
         
         context_segments = [documents[list(documents.keys())[i]] for i in I[0]]
@@ -164,12 +173,14 @@ def ollama_chat(user_input, system_message, index, documents, metadata, qa_model
         save_faiss_index(index_file, documents_file, metadata_file, index, documents, metadata)
         relevant_context = get_relevant_context(user_input, index, documents, top_k, embedding_model, max_context_length)
         context_str = relevant_context
-        #print("Context Pulled from Document: \n\n" + CYAN + context_str + RESET_COLOR)
+        if DEBUG:
+            print(f"Context Pulled from Document using spesific document: \n\n{context_str}")
     else:
         relevant_context = get_relevant_context(user_input, index, documents, top_k, embedding_model, max_context_length)
         if relevant_context:
             context_str = relevant_context
-            #print("Context Pulled from Documents: \n\n" + CYAN + context_str + RESET_COLOR)
+            if DEBUG:
+                print(f"Context Pulled from Documents using all documents: \n\n{context_str}")
         else:
             print("No relevant context found.")
             context_str = ""
@@ -181,7 +192,8 @@ def ollama_chat(user_input, system_message, index, documents, metadata, qa_model
     conversation_history.append({"role": "user", "content": user_input_with_context})
     messages = [{"role": "system", "content": system_message}, *conversation_history]
 
-    #print(f"Messages being sent to QA model: {messages}")  
+    if DEBUG:
+        print(f"Messages being sent to QA model: {messages}")
 
     try:
         response = client.chat.completions.create(
