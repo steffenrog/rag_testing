@@ -1,0 +1,8 @@
+openai
+pyyaml
+faiss-cpu
+numpy
+pypdf2
+packaging
+## install torch your own way - conda install pytorch-nightly::pytorch torchvision torchaudio -c pytorch-nightly
+# or look at https://pytorch.org/get-started/locally/
